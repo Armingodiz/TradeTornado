@@ -27,7 +27,7 @@ type orderCreateEvent struct {
 
 type orderMatchEvent struct {
 	OrderID        uint      `json:"orderID"`
-	MatchedOrderID uint      `json:"price"`
+	MatchedOrderID uint      `json:"matchedOrderID"`
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
@@ -44,11 +44,12 @@ func (o *OrderEventHandler) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		_, loaded := o.processingOrders.LoadOrStore(oe.OrderID, oe)
+		_, loaded := o.processingOrders.LoadOrStore(oe.OrderID, oe.OrderID)
 		if loaded {
 			logrus.Warningln(order.OrderAlreadyProcessingFound)
 			return nil
 		}
+		defer o.processingOrders.Delete(oe.OrderID)
 		om, err := order.NewOrder(oe.OrderID, oe.Side, oe.Price, oe.Quantity)
 		if err != nil {
 			logrus.Errorln(err)
