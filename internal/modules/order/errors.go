@@ -7,16 +7,13 @@ import (
 )
 
 var (
-	OrderNotFound       = lib.NewErrorNotification()
-	ParentOrderNotFound = lib.NewErrorNotification()
-	OrderDuplicateName  = lib.NewErrorNotification()
-	OrderDuplicateRefId = lib.NewErrorNotification()
-	NotFound            = lib.NewNotFoundError("Order")
+	OrderAlreadyProcessingFound = lib.NewErrorNotification()
+	OrderAlreadyCreated         = lib.NewErrorNotification()
+	NoOrderMatched              = lib.NewErrorNotification()
 )
 
 func init() {
-	OrderNotFound.Add("Order_not_found", errors.New("Order not found"))
-	ParentOrderNotFound.Add("parent_Order_not_found", errors.New("parent Order not found"))
-	OrderDuplicateName.Add("Order_name", errors.New("Order with this name already exist"))
-	OrderDuplicateRefId.Add("Order_ref_id", errors.New("Order with this ref id already exist"))
+	OrderAlreadyProcessingFound.Add("processing_order", errors.New("order is already processing"))
+	OrderAlreadyCreated.Add("created_order", errors.New("order is already created"))
+	NoOrderMatched.Add("no_match", errors.New("no order matched with this order"))
 }

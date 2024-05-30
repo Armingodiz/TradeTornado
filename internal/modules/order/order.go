@@ -8,9 +8,10 @@ import (
 type Order struct {
 	ID        uint `gorm:"primarykey;column:id"`
 	CreatedAt time.Time
-	Side      OrderSide `criteria:"side" gorm:"column:side;index:idx_side_price_quantity,priority:1"`
-	Price     int64     `criteria:"price" gorm:"column:price;index:idx_side_price_quantity,priority:2"`
-	Quantity  int32     `criteria:"quantity" gorm:"column:quantity;index:idx_side_price_quantity,priority:3"`
+	Matched   bool      `criteria:"matched" gorm:"column:matched;index:idx_matched_side_price_quantity,priority:1"`
+	Side      OrderSide `criteria:"side" gorm:"column:side;index:idx_matched_side_price_quantity,priority:2"`
+	Price     int64     `criteria:"price" gorm:"column:price;index:idx_matched_side_price_quantity,priority:3"`
+	Quantity  int32     `criteria:"quantity" gorm:"column:quantity;index:idx_matched_side_price_quantity,priority:4"`
 }
 
 type OrderSide string
@@ -29,6 +30,10 @@ func NewOrder(id uint, side string, price int64, quantity int32) (*Order, error)
 		CreatedAt: time.Now(),
 	}
 	return order, order.validate()
+}
+
+func (order *Order) Match() {
+	order.Matched = true
 }
 
 func (order *Order) validate() error {

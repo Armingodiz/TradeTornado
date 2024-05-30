@@ -7,8 +7,9 @@ import (
 
 type IOrderWriteRepository interface {
 	SaveWithHook(ctx context.Context, order *Order, process func(ctx context.Context, Order *Order) error) error
-	Save(ctx context.Context, order *Order) error
-	SelectForUpdate(ctx context.Context, price, quantity int, updateFn func(ctx context.Context, Order *Order) error) error
+	CreateWithHook(ctx context.Context, order *Order, process func(ctx context.Context, Order *Order) error) error
+	SelectForUpdate(ctx context.Context, side OrderSide, price, quantity int, updateFn func(ctx context.Context, Order *Order) error) error
+	Save(ctx context.Context, cg *Order) error
 }
 
 type IOrderReadRepository interface {
@@ -22,6 +23,15 @@ type IOrderGenericRepository interface {
 
 type IOrderCacheRepository interface{}
 
-type IOrderConsumer interface {
+type IConsumer interface {
 	Consume(ctx context.Context, process func(message string) error) error
+}
+
+type IProducer interface {
+	Produce(topic, key, message string) error
+}
+
+type IEventBus interface {
+	IConsumer
+	IProducer
 }

@@ -133,6 +133,7 @@ func (receiver *KafkaConsumerProvider) Consume(ctx context.Context, process func
 				go func(msg *kafka.Message) {
 					defer wg.Done()
 					if err := process(string(msg.Value)); err != nil {
+						// TODO: handle produce error
 						receiver.Produce(receiver.cnf.RetryTopic, string(msg.Key), string(msg.Value))
 					}
 				}(msg)
