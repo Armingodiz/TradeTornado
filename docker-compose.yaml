@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  postgres-master:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tradetornado
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-master-data:/var/lib/postgresql/data
+
+  postgres-slave:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tradetornado
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_MASTER_HOST: postgres-master
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_REPLICATION_USER: postgres
+      POSTGRES_REPLICATION_PASSWORD: postgres
+    depends_on:
+      - postgres-master
+    ports:
+      - "5433:5432"  # Avoid port conflict with master
+    volumes:
+      - postgres-slave-data:/var/lib/postgresql/data
+
+  # redis:
+  #   image: redis:latest
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - backend
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+    
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka-data:/bitnami/kafka
+
+  # go-app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - postgres-master
+  #     - postgres-slave
+  #     - redis
+  #     - kafka
+  #   networks:
+  #     - backend
+  #   environment:
+  #     APP_NAME: tradeTornado
+  #     POSTGRES_MASTER_HOST: postgres-master
+  #     POSTGRES_MASTER_PORT: 5432
+  #     POSTGRES_MASTER_USER: postgres
+  #     POSTGRES_MASTER_PASS: postgres
+  #     POSTGRES_MASTER_DB: tradetornado
+  #     POSTGRES_MASTER_MAX_CONNECTION: 30
+  #     POSTGRES_MASTER_MAX_IDLE: 4
+  #     POSTGRES_SLAVE_HOST: postgres-slave
+  #     POSTGRES_SLAVE_PORT: 5433  # Use the exposed port for the slave
+  #     POSTGRES_SLAVE_USER: postgres
+  #     POSTGRES_SLAVE_PASS: postgres
+  #     POSTGRES_SLAVE_DB: tradetornado
+  #     POSTGRES_SLAVE_MAX_CONNECTION: 30
+  #     POSTGRES_SLAVE_MAX_IDLE: 4
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: ""
+  #     REDIS_DB: 0
+  #     KAFKA_BROKERS: kafka:9092
+  #     KAFKA_TOPIC: order-events
+  #     KAFKA_GROUP_ID: tradeTornadoGroup
+  #     KAFKA_USERNAME: ""
+  #     KAFKA_PASSWORD: ""
+  #     METRIC_PORT: 9092
+  #     MONITOR_DISABLE: "false"
+  #     IS_PRODUCTION: "false"
+
+  # go-producer:
+  #   build:
+  #     context: ./producer
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - kafka
+  #   networks:
+  #     - backend
+  #   environment:
+  #     APP_NAME: tradeTornadoProducer
+  #     KAFKA_BROKERS: kafka:9092
+  #     KAFKA_TOPIC: order-events
+  #     KAFKA_GROUP_ID: tradeTornadoProducerGroup
+  #     KAFKA_USERNAME: ""
+  #     KAFKA_PASSWORD: ""
+
+volumes:
+  postgres-master-data:
+  postgres-slave-data:
+  kafka-data:
