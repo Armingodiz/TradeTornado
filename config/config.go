@@ -13,7 +13,6 @@ type Configs struct {
 	SlaveDatabase            provider.PostgresConfig
 	MetricConfig             *provider.PrometheusConfig
 	IsProduction             bool
-	RedisConfig              provider.RedisConfig
 	KafkaConsumerConfig      provider.KafkaConsumerConfig
 	KafkaProducerConfig      provider.KafkaProducerConfig
 	OrderCreateTopic         string
@@ -49,13 +48,6 @@ func ConfigFromEnv() Configs {
 		MetricConfig: &provider.PrometheusConfig{
 			Port:    lib.GetEnv("METRIC_PORT", "9095"),
 			Disable: cast.ToBool(lib.GetEnv("MONITOR_DISABLE", "false")),
-		},
-		RedisConfig: provider.RedisConfig{
-			Host:      lib.GetEnv("REDIS_HOST", "localhost"),
-			Port:      lib.GetEnv("REDIS_PORT", "6379"),
-			Password:  lib.GetEnv("REDIS_PASSWORD", ""),
-			MaxIdle:   cast.ToInt(lib.GetEnv("REDIS_MAX_IDLE", "0")),
-			MaxActive: cast.ToInt(lib.GetEnv("REDIS_MAX_ACTIVE", "0")),
 		},
 		KafkaConsumerConfig: provider.KafkaConsumerConfig{
 			Brokers:   lib.GetEnv("KAFKA_BROKERS", "localhost:29092"),
