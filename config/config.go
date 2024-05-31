@@ -59,14 +59,14 @@ func ConfigFromEnv() Configs {
 		},
 		KafkaConsumerConfig: provider.KafkaConsumerConfig{
 			Brokers:   lib.GetEnv("KAFKA_BROKERS", "localhost:29092"),
-			BatchSize: 100,
+			BatchSize: cast.ToInt(lib.GetEnv("KAFKA_CONSUMER_BATCH_SIZE", "100")),
 		},
 		KafkaProducerConfig: provider.KafkaProducerConfig{
 			Brokers: lib.GetEnv("KAFKA_BROKERS", "localhost:29092"),
 		},
-		OrderCreateTopic:         "order-events",
-		OrderMatchedTopic:        "order-matches",
-		OrderCreateConsumerGroup: "matcher",
+		OrderCreateTopic:         lib.GetEnv("KAFKA_ORDER_CREATE_TOPIC", "order-events"),
+		OrderMatchedTopic:        lib.GetEnv("KAFKA_ORDER_MATCH_TOPIC", "order-matches"),
+		OrderCreateConsumerGroup: lib.GetEnv("KAFKA_ORDER_CREATE_CONSUMER_GROUP", "matcher"),
 		ServerConfigs: provider.ServerConfigs{
 			Port:           lib.GetEnv("API_PORT", "8080"),
 			Name:           lib.GetEnv("API_NAME", "order-matcher"),
