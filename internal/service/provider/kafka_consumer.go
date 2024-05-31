@@ -115,7 +115,7 @@ func (receiver *KafkaConsumerProvider) Consume(ctx context.Context, process func
 					defer wg.Done()
 					if err := process(string(msg.Value)); err != nil {
 						fmt.Println("#### --> here error")
-						// TODO: handle produce error, insert them in some table?
+						// TODO:handle produce error, insert them in some table?
 						receiver.producer.ProduceWithKey(ctx, receiver.Topic, string(msg.Key), string(msg.Value))
 					}
 				}(msg)
