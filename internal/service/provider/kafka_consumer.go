@@ -114,9 +114,7 @@ func (receiver *KafkaConsumerProvider) Consume(ctx context.Context, process func
 				go func(msg *kafka.Message) {
 					defer wg.Done()
 					if err := process(string(msg.Value)); err != nil {
-						fmt.Println("#### --> here error")
-						// TODO:handle produce error, insert them in some table?
-						receiver.producer.ProduceWithKey(ctx, receiver.Topic, string(msg.Key), string(msg.Value))
+						receiver.reproduce(ctx, msg)
 					}
 				}(msg)
 			}
@@ -160,5 +158,14 @@ func (receiver *KafkaConsumerProvider) commitOffsets(batch []*kafka.Message) {
 	}
 	if _, err := receiver.consumer.CommitOffsets(offsets); err != nil {
 		logrus.WithError(err).Error("Failed to commit offsets")
+	}
+}
+
+func (receiver *KafkaConsumerProvider) reproduce(ctx context.Context, msg *kafka.Message) {
+	err := receiver.producer.ProduceWithKey(ctx, receiver.Topic, string(msg.Key), string(msg.Value))
+	for err != nil {
+		// TODO: add metric and set alert
+		logrus.Errorln(err)
+		err = receiver.producer.ProduceWithKey(ctx, receiver.Topic, string(msg.Key), string(msg.Value))
 	}
 }
