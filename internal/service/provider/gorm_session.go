@@ -2,62 +2,23 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"sync"
-
-	"tradeTornado/internal/lib/messaging"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-var SessionNotInTransactionError = errors.New("session not in transaction")
-var SessionAlreadyInTransactionError = errors.New("session already in transaction")
-
-func NewGormSession(db *gorm.DB, bus messaging.IEventBus) *GormSession {
+func NewGormSession(db *gorm.DB) *GormSession {
 	return &GormSession{
 		database: db,
 		lock:     sync.Mutex{},
-		events:   []messaging.IEvent{},
-		eventBus: bus,
 	}
 }
 
 type GormSession struct {
 	database *gorm.DB
 	tx       *gorm.DB
-	events   []messaging.IEvent
 	lock     sync.Mutex
-	eventBus messaging.IEventBus
-}
-
-func (s *GormSession) publishEvents(ctx context.Context) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	if len(s.events) > 0 {
-		for _, event := range s.events {
-			if err := s.eventBus.Publish(ctx, event); err != nil {
-				return err
-			}
-		}
-		s.events = []messaging.IEvent{}
-	}
-	return nil
-}
-func (s *GormSession) AddTXEvent(ctx context.Context, events ...messaging.IEvent) error {
-	logrus.Debugln("AddTXEvent ", len(events))
-	for _, event := range events {
-		bt, _ := event.Marshal()
-		logrus.Debugln("AddTXEvent", event.GetName(), string(bt))
-	}
-	s.lock.Lock()
-	s.events = append(s.events, events...)
-	s.lock.Unlock()
-	if !s.InTransaction() {
-		logrus.Debugln("###########Publishing events")
-		return s.publishEvents(ctx)
-	}
-	return nil
 }
 
 func (s *GormSession) RunTx(ctx context.Context, closure func() error) error {
@@ -110,11 +71,6 @@ func (s *GormSession) Commit(ctx context.Context) error {
 	if s.tx == nil {
 		return SessionNotInTransactionError
 	}
-
-	if err := s.publishEvents(ctx); err != nil {
-		return err
-	}
-
 	if err := s.tx.WithContext(ctx).Commit().Error; err != nil {
 		return err
 	}
