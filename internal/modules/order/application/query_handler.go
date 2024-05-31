@@ -7,6 +7,10 @@ import (
 )
 
 type OrderDto struct {
+	Matched   bool
+	Side      string
+	Price     int64
+	Quantity  int32
 	CreatedAt int64
 }
 
@@ -19,18 +23,23 @@ func NewOrderQueryHandler(orderRepository order.IOrderReadRepository) *OrderQuer
 }
 
 func (cqh *OrderQueryHandler) ListOrders(ctx context.Context, criteria lib.Criteria) ([]*OrderDto, int, error) {
-	cats, total, err := cqh.orderRepository.List(ctx, criteria)
+	orders, total, err := cqh.orderRepository.List(ctx, criteria)
 	if err != nil {
 		return nil, 0, err
 	}
-	var dtos []*OrderDto
-	for _, cat := range cats {
-		dtos = append(dtos, cqh.toDtos(cat)[0])
-	}
-	return dtos, total, nil
+	return cqh.toDtos(orders...), total, nil
 }
 
-func (cqh *OrderQueryHandler) toDtos(Order ...*order.Order) []*OrderDto {
+func (cqh *OrderQueryHandler) toDtos(orders ...*order.Order) []*OrderDto {
 	dtos := make([]*OrderDto, 0)
+	for _, ord := range orders {
+		dtos = append(dtos, &OrderDto{
+			Price:     ord.Price,
+			Quantity:  ord.Quantity,
+			Matched:   ord.Matched,
+			Side:      string(ord.Side),
+			CreatedAt: ord.CreatedAt.Unix(),
+		})
+	}
 	return dtos
 }
