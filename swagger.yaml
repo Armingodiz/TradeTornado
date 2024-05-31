@@ -1,0 +1,125 @@
+openapi: 3.0.0
+info:
+  title: tradeTornado API
+  description: API documentation for the tradeTornado endpoints
+  version: 1.0.0
+paths:
+  /orders:
+    get:
+      summary: Get orders
+      description: Retrieve orders based on filters, pagination, and sorting.
+      parameters:
+        - name: filters
+          in: query
+          description: Filters in the format of field,operator,value. Multiple filters can be added by repeating this parameter.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+            example:
+              - matched,Equal,false
+              - side,Equal,sell
+        - name: offset
+          in: query
+          description: Offset for pagination
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - name: limit
+          in: query
+          description: Limit for pagination
+          required: false
+          schema:
+            type: integer
+            example: 100
+        - name: operator
+          in: query
+          description: Logical operator for combining filters
+          required: false
+          schema:
+            type: string
+            enum:
+              - AND
+              - OR
+            example: AND
+        - name: sorts
+          in: query
+          description: Sorts in the format of field,operator. Multiple sorts can be added by repeating this parameter.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+            example:
+              - price,ASC
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Matched:
+                          type: boolean
+                          example: false
+                        Side:
+                          type: string
+                          example: buy
+                        Price:
+                          type: integer
+                          example: 9
+                        Quantity:
+                          type: integer
+                          example: 15
+                        CreatedAt:
+                          type: integer
+                          example: 1717162831
+                example:
+                  orders:
+                    - Matched: false
+                      Side: buy
+                      Price: 9
+                      Quantity: 15
+                      CreatedAt: 1717162831
+                    - Matched: false
+                      Side: buy
+                      Price: 9
+                      Quantity: 15
+                      CreatedAt: 1717162830
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                example:
+                  error: invalid filter format, expected field,operator,value
+components:
+  schemas:
+    FilterOperator:
+      type: string
+      enum:
+        - Equal
+        - GT
+        - GTE
+        - LT
+        - LTE
+        - IN
+        - between
+        - Contain
+    SortOperator:
+      type: string
+      enum:
+        - ASC
+        - DESC

@@ -24,7 +24,7 @@ func (oc *OrderController) GetRouters() []func() (method string, url string, han
 	}
 }
 func (oc *OrderController) GetRoot() string {
-	return "orderbook"
+	return "orders"
 }
 func (oc *OrderController) GetMiddlewares() []gin.HandlerFunc {
 	return nil
@@ -32,7 +32,13 @@ func (oc *OrderController) GetMiddlewares() []gin.HandlerFunc {
 
 func (oc *OrderController) listOrderBook() (method string, uri string, handler gin.HandlerFunc) {
 	return http.MethodGet, "", func(context *gin.Context) {
-		criteria := lib.NewCriteria()
+		criteria, err := lib.ParseCriteriaFromRequest(context)
+		if err != nil {
+			context.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 		orders, count, err := oc.queryHanlder.ListOrders(context, *criteria)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, gin.H{

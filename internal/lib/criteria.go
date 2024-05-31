@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -143,6 +145,59 @@ func (cr *Criteria) SetOperator(opr LogicalOperator) {
 
 func (cr *Criteria) AddSort(sr Sort) {
 	cr.Sorts = append(cr.Sorts, sr)
+}
+
+func ParseCriteriaFromRequest(c *gin.Context) (*Criteria, error) {
+	criteria := NewCriteria()
+
+	filters := c.QueryArray("filters")
+	for _, filterStr := range filters {
+		parts := strings.Split(filterStr, ",")
+		if len(parts) < 3 {
+			return nil, errors.New("invalid filter format, expected field,operator,value")
+		}
+
+		field := parts[0]
+		operator, err := FilterOperatorFromStringName(parts[1])
+		if err != nil {
+			return nil, err
+		}
+
+		values := parts[2:]
+		filter, err := NewFilter(field, operator, values...)
+		if err != nil {
+			return nil, err
+		}
+		criteria.AddFilter(filter)
+	}
+
+	offset := c.Query("offset")
+	limit := c.Query("limit")
+	if offset != "" && limit != "" {
+		pg := NewPagination(cast.ToUint(offset), cast.ToUint(limit))
+		criteria.SetPagination(pg)
+	}
+
+	sorts := c.QueryArray("sorts")
+	for _, sortStr := range sorts {
+		parts := strings.Split(sortStr, ",")
+		if len(parts) != 2 {
+			return nil, errors.New("invalid sort format, expected field,operator")
+		}
+
+		field := parts[0]
+		operator := SortOperator(parts[1])
+		sort := NewSort(field, operator)
+		criteria.AddSort(sort)
+	}
+
+	// Parse Logical Operator
+	operator := c.Query("operator")
+	if operator != "" {
+		criteria.SetOperator(LogicalOperator(operator))
+	}
+
+	return criteria, nil
 }
 
 type ApplyGormCriteria func(qr *gorm.DB, structType any, criteria *Criteria) (*gorm.DB, error)
