@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"tradeTornado/internal/lib"
 	"tradeTornado/internal/modules/order"
@@ -11,6 +12,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+var duplicatePrimaryKey = "duplicate key value violates unique constraint"
 
 type OrderRepository struct {
 	session *provider.GormSession
@@ -26,13 +29,16 @@ func (c *OrderRepository) Save(ctx context.Context, cg *order.Order) error {
 	return c.session.Gorm().WithContext(ctx).Save(cg).Error
 }
 
-func (c *OrderRepository) CreateWithHook(ctx context.Context, order *order.Order, process func(ctx context.Context, Order *order.Order) error) error {
+func (c *OrderRepository) CreateWithHook(ctx context.Context, or *order.Order, process func(ctx context.Context, Order *order.Order) error) error {
 	return c.session.RunTx(ctx, func() error {
-		err := c.session.Gorm().WithContext(ctx).Create(order).Error
+		err := c.session.Gorm().WithContext(ctx).Create(or).Error
 		if err != nil {
+			if strings.Contains(err.Error(), duplicatePrimaryKey) {
+				return order.OrderAlreadyCreated
+			}
 			return err
 		}
-		return process(ctx, order)
+		return process(ctx, or)
 	})
 }
 

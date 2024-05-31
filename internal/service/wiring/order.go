@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"log"
+	"tradeTornado/internal/modules/order"
 	"tradeTornado/internal/modules/order/application"
 	"tradeTornado/internal/modules/order/infrastructure"
 	"tradeTornado/internal/service/provider"
@@ -12,11 +13,15 @@ func (c *ContainerBuilder) GetOrdereController() *infrastructure.OrderController
 }
 
 func (c *ContainerBuilder) NewOrdereQueryHandler() *application.OrderQueryHandler {
-	return application.NewOrderQueryHandler(c.NewOrderRepository())
+	return application.NewOrderQueryHandler(c.NewOrderReadRepository())
 }
 
-func (c *ContainerBuilder) NewOrderRepository() *infrastructure.OrderRepository {
+func (c *ContainerBuilder) NewOrderWriteRepository() *infrastructure.OrderRepository {
 	return infrastructure.NewOrderRepository(c.NewMasterGormSession())
+}
+
+func (c *ContainerBuilder) NewOrderReadRepository() *infrastructure.OrderRepository {
+	return infrastructure.NewOrderRepository(c.NewSlaveGormSession())
 }
 
 func (c *ContainerBuilder) NewOrderRepositoryTx(session *provider.GormSession) *infrastructure.OrderRepository {
@@ -24,16 +29,32 @@ func (c *ContainerBuilder) NewOrderRepositoryTx(session *provider.GormSession) *
 }
 
 func (c *ContainerBuilder) NewOrderEventHandler() *application.OrderEventHandler {
-	return application.NewOrderEventHandler(c.GetKafkaConsumerProvider(), c.NewOrderRepository())
+	return application.NewOrderEventHandler(c.GetKafkaCreateOrderConsumerProvider(),
+		c.GetKafkaProducerProvider(),
+		c.cnf.OrderMatchedTopic,
+		func() order.IOrderWriteRepository {
+			return c.NewOrderWriteRepository()
+		})
 }
 
-func (c *ContainerBuilder) GetKafkaConsumerProvider() *provider.KafkaConsumerProvider {
-	if c.kafkaConsumerProvider == nil {
-		pv, err := provider.NewKafkaConsumerProvider(c.cnf.KafkaConsumerConfig)
+func (c *ContainerBuilder) GetKafkaCreateOrderConsumerProvider() *provider.KafkaConsumerProvider {
+	if c.kafkaCreateOrderConsumerProvider == nil {
+		pv, err := provider.NewKafkaConsumerProvider(c.cnf.KafkaConsumerConfig, c.GetKafkaProducerProvider(), c.cnf.OrderCreateTopic, c.cnf.OrderCreateConsumerGroup)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		c.kafkaConsumerProvider = pv
+		c.kafkaCreateOrderConsumerProvider = pv
 	}
-	return c.kafkaConsumerProvider
+	return c.kafkaCreateOrderConsumerProvider
+}
+
+func (c *ContainerBuilder) GetKafkaProducerProvider() *provider.KafkaProducerProvider {
+	if c.kafkaProducerProvider == nil {
+		pv, err := provider.NewKafkaProducer(c.cnf.KafkaProducerConfig)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		c.kafkaProducerProvider = pv
+	}
+	return c.kafkaProducerProvider
 }

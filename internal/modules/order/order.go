@@ -21,6 +21,14 @@ const (
 	BuyOrderSide  OrderSide = "buy"
 )
 
+func (os OrderSide) GetMatchSide() OrderSide {
+	if os == SellOrderSide {
+		return BuyOrderSide
+	} else {
+		return SellOrderSide
+	}
+}
+
 func NewOrder(id uint, side string, price int64, quantity int32) (*Order, error) {
 	order := &Order{
 		Price:     price,

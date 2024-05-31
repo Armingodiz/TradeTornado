@@ -13,15 +13,16 @@ import (
 )
 
 type ContainerBuilder struct {
-	cnf                     configs.Configs
-	systemDb                *provider.PGProvider
-	oldStalinDb             *provider.PGProvider
-	threadPool              *service.ExecutorRegistry
-	eventBus                *messaging.EventBus
-	migrationRegistry       *service.MigrationRegistry
-	prometheusService       *provider.PrometheusMetricsServer
-	feedbackUserGromSession *provider.GormSession
-	kafkaConsumerProvider   *provider.KafkaConsumerProvider
+	cnf                              configs.Configs
+	systemDb                         *provider.PGProvider
+	oldStalinDb                      *provider.PGProvider
+	threadPool                       *service.ExecutorRegistry
+	eventBus                         *messaging.EventBus
+	migrationRegistry                *service.MigrationRegistry
+	prometheusService                *provider.PrometheusMetricsServer
+	feedbackUserGromSession          *provider.GormSession
+	kafkaCreateOrderConsumerProvider *provider.KafkaConsumerProvider
+	kafkaProducerProvider            *provider.KafkaProducerProvider
 }
 
 func NewContainer(cnf configs.Configs) *ContainerBuilder {
@@ -57,7 +58,7 @@ func (c *ContainerBuilder) initThreadPool() {
 	pool := c.GetThreadPool()
 	pool.AddExecutor(c.GetMasterDB())
 	pool.AddExecutor(c.GetSlaveDB())
-	pool.AddExecutor(c.GetKafkaConsumerProvider())
+	pool.AddExecutor(c.GetKafkaCreateOrderConsumerProvider())
 	pool.AddExecutor(c.NewOrderEventHandler())
 	pool.AddExecutor(c.GetMetricsService())
 }
@@ -65,7 +66,7 @@ func (c *ContainerBuilder) initThreadPool() {
 func (c *ContainerBuilder) initMigrationRegistry() {
 	// todo : pass a GormSession!
 	// this will not work by TX
-	c.getMigrationRegistry().RegisterMigration("orders", c.NewOrderRepository())
+	c.getMigrationRegistry().RegisterMigration("orders", c.NewOrderWriteRepository())
 }
 
 func (c *ContainerBuilder) getEventBus() *messaging.EventBus {

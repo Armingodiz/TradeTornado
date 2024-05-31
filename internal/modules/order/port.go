@@ -22,16 +22,3 @@ type IOrderGenericRepository interface {
 }
 
 type IOrderCacheRepository interface{}
-
-type IConsumer interface {
-	Consume(ctx context.Context, process func(message string) error) error
-}
-
-type IProducer interface {
-	Produce(topic, key, message string) error
-}
-
-type IEventBus interface {
-	IConsumer
-	IProducer
-}

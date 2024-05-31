@@ -8,13 +8,17 @@ import (
 )
 
 type Configs struct {
-	AppName             string
-	MasterDatabase      provider.PostgresConfig
-	SlaveDatabase       provider.PostgresConfig
-	MetricConfig        *provider.PrometheusConfig
-	IsProduction        bool
-	RedisConfig         provider.RedisConfig
-	KafkaConsumerConfig provider.KafkaConsumerConfig
+	AppName                  string
+	MasterDatabase           provider.PostgresConfig
+	SlaveDatabase            provider.PostgresConfig
+	MetricConfig             *provider.PrometheusConfig
+	IsProduction             bool
+	RedisConfig              provider.RedisConfig
+	KafkaConsumerConfig      provider.KafkaConsumerConfig
+	KafkaProducerConfig      provider.KafkaProducerConfig
+	OrderCreateTopic         string
+	OrderMatchedTopic        string
+	OrderCreateConsumerGroup string
 }
 
 func ConfigFromEnv() Configs {
@@ -24,9 +28,9 @@ func ConfigFromEnv() Configs {
 		MasterDatabase: provider.PostgresConfig{
 			Host:              lib.GetEnv("POSTGRES_MASTER_HOST", "localhost"),
 			Port:              lib.GetEnv("POSTGRES_MASTER_PORT", "5432"),
-			UserName:          lib.GetEnv("POSTGRES_MASTER_USER", "postgres"),
-			Password:          lib.GetEnv("POSTGRES_MASTER_PASS", "postgres"),
-			DB:                lib.GetEnv("POSTGRES_MASTER_DB", "tradetornado"),
+			UserName:          lib.GetEnv("POSTGRES_MASTER_USER", "admin"),
+			Password:          lib.GetEnv("POSTGRES_MASTER_PASS", "adminpassword"),
+			DB:                lib.GetEnv("POSTGRES_MASTER_DB", "tradeTornado"),
 			MaxConnection:     lib.GetEnv("POSTGRES_MASTER_MAX_CONNECTION", "30"),
 			MaxIdleConnection: lib.GetEnv("POSTGRES_MASTER_MAX_IDLE", "4"),
 			IsProduction:      cast.ToBool(lib.GetEnv("IS_PRODUCTION", "FALSE")),
@@ -34,9 +38,9 @@ func ConfigFromEnv() Configs {
 		SlaveDatabase: provider.PostgresConfig{
 			Host:              lib.GetEnv("POSTGRES_SLAVE_HOST", "localhost"),
 			Port:              lib.GetEnv("POSTGRES_SLAVE_PORT", "5433"),
-			UserName:          lib.GetEnv("POSTGRES_SLAVE_USER", "postgres"),
-			Password:          lib.GetEnv("POSTGRES_SLAVE_PASS", "postgres"),
-			DB:                lib.GetEnv("POSTGRES_SLAVE_DB", "tradetornado"),
+			UserName:          lib.GetEnv("POSTGRES_SLAVE_USER", "admin"),
+			Password:          lib.GetEnv("POSTGRES_SLAVE_PASS", "adminpassword"),
+			DB:                lib.GetEnv("POSTGRES_SLAVE_DB", "tradeTornado"),
 			MaxConnection:     lib.GetEnv("POSTGRES_SLAVE_MAX_CONNECTION", "30"),
 			MaxIdleConnection: lib.GetEnv("POSTGRES_SLAVE_MAX_IDLE", "4"),
 			IsProduction:      cast.ToBool(lib.GetEnv("IS_PRODUCTION", "FALSE")),
@@ -54,9 +58,13 @@ func ConfigFromEnv() Configs {
 		},
 		KafkaConsumerConfig: provider.KafkaConsumerConfig{
 			Brokers:   lib.GetEnv("KAFKA_BROKERS", "localhost:29092"),
-			Topics:    []string{"order-events"},
-			BatchSize: 2,
-			GroupID:   "matcher",
+			BatchSize: 100,
 		},
+		KafkaProducerConfig: provider.KafkaProducerConfig{
+			Brokers: lib.GetEnv("KAFKA_BROKERS", "localhost:29092"),
+		},
+		OrderCreateTopic:         "order-events",
+		OrderMatchedTopic:        "order-matches",
+		OrderCreateConsumerGroup: "matcher",
 	}
 }

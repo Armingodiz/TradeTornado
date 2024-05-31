@@ -8,14 +8,17 @@ import (
 	"sync"
 	"time"
 	"tradeTornado/internal/modules/order"
+	"tradeTornado/internal/service/provider"
 
 	"github.com/sirupsen/logrus"
 )
 
 type OrderEventHandler struct {
-	eventBus         order.IEventBus
-	orderRepository  order.IOrderWriteRepository
-	processingOrders sync.Map
+	createOrderConsumer provider.IConsumer
+	matchOrderProducer  provider.IProducer
+	matchOrderTopic     string
+	orderRepositoryGen  func() order.IOrderWriteRepository
+	processingOrders    sync.Map
 }
 
 type orderCreateEvent struct {
@@ -31,14 +34,13 @@ type orderMatchEvent struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
-func NewOrderEventHandler(eventBus order.IEventBus, orderRepository order.IOrderGenericRepository) *OrderEventHandler {
-	return &OrderEventHandler{eventBus: eventBus, orderRepository: orderRepository}
+func NewOrderEventHandler(createOrderConsumer provider.IConsumer, matchOrderProducer provider.IProducer, mot string, orderRepositoryGet func() order.IOrderWriteRepository) *OrderEventHandler {
+	return &OrderEventHandler{createOrderConsumer: createOrderConsumer, matchOrderProducer: matchOrderProducer, matchOrderTopic: mot, orderRepositoryGen: orderRepositoryGet}
 }
 
 func (o *OrderEventHandler) Run(ctx context.Context) error {
 	fmt.Println("### --> running")
-	return o.eventBus.Consume(ctx, func(message string) error {
-		fmt.Println("##### OrderEventHandler Received message: ", message)
+	return o.createOrderConsumer.Consume(ctx, func(message string) error {
 		var oe orderCreateEvent
 		err := json.Unmarshal([]byte(message), &oe)
 		if err != nil {
@@ -56,8 +58,9 @@ func (o *OrderEventHandler) Run(ctx context.Context) error {
 			// Invalid orders are erased from queue
 			return nil
 		}
-		err = o.orderRepository.CreateWithHook(ctx, om, func(ctx context.Context, createdOrder *order.Order) error {
-			if err := o.matchOrder(ctx, createdOrder); err != nil {
+		orderRepo := o.orderRepositoryGen()
+		err = orderRepo.CreateWithHook(ctx, om, func(ctx context.Context, createdOrder *order.Order) error {
+			if err := o.matchOrder(ctx, orderRepo, createdOrder); err != nil {
 				if !errors.Is(err, order.NoOrderMatched) {
 					return err
 				}
@@ -76,16 +79,16 @@ func (o *OrderEventHandler) Run(ctx context.Context) error {
 	})
 }
 
-func (o *OrderEventHandler) matchOrder(ctx context.Context, createdOrder *order.Order) error {
+func (o *OrderEventHandler) matchOrder(ctx context.Context, orderRepo order.IOrderWriteRepository, createdOrder *order.Order) error {
 	// TODO: database may become bottleneck, check for better approach
-	return o.orderRepository.SelectForUpdate(ctx, createdOrder.Side, int(createdOrder.Price), int(createdOrder.Quantity), func(ctx context.Context, matchedOrder *order.Order) error {
+	return orderRepo.SelectForUpdate(ctx, createdOrder.Side.GetMatchSide(), int(createdOrder.Price), int(createdOrder.Quantity), func(ctx context.Context, matchedOrder *order.Order) error {
 		createdOrder.Match()
-		err := o.orderRepository.Save(ctx, createdOrder)
+		err := orderRepo.Save(ctx, createdOrder)
 		if err != nil {
 			return err
 		}
 		matchedOrder.Match()
-		err = o.orderRepository.Save(ctx, matchedOrder)
+		err = orderRepo.Save(ctx, matchedOrder)
 		if err != nil {
 			return err
 		}
@@ -94,8 +97,8 @@ func (o *OrderEventHandler) matchOrder(ctx context.Context, createdOrder *order.
 		if err != nil {
 			return err
 		}
-		// TODO: fix topic and message
-		return o.eventBus.Produce("", "", string(bts))
+		fmt.Println("--------------- MATCH EVENT:", string(bts))
+		return o.matchOrderProducer.Produce(ctx, o.matchOrderTopic, string(bts))
 	})
 }
 
