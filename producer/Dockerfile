@@ -5,7 +5,7 @@ WORKDIR /src
 
 COPY . /src
 
-RUN go mod download because source code is updated
+RUN go mod download
 
 RUN go build -ldflags="-w -s" -o my-app main.go
 
