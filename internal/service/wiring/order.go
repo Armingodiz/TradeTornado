@@ -24,7 +24,7 @@ func (c *ContainerBuilder) NewOrderReadRepository() *infrastructure.OrderReposit
 	return infrastructure.NewOrderRepository(c.NewSlaveGormSession())
 }
 
-func (c *ContainerBuilder) NewOrderRepositoryTx(session *provider.GormSession) *infrastructure.OrderRepository {
+func (c *ContainerBuilder) NewOrderWriteRepositoryTx(session *provider.GormSession) *infrastructure.OrderRepository {
 	return infrastructure.NewOrderRepository(session)
 }
 

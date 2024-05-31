@@ -7,20 +7,17 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"tradeTornado/internal/lib/messaging"
 	"tradeTornado/internal/service"
 	"tradeTornado/internal/service/provider"
 )
 
 type ContainerBuilder struct {
 	cnf                              configs.Configs
-	systemDb                         *provider.PGProvider
-	oldStalinDb                      *provider.PGProvider
+	masterDb                         *provider.PGProvider
+	slaveDb                          *provider.PGProvider
 	threadPool                       *service.ExecutorRegistry
-	eventBus                         *messaging.EventBus
 	migrationRegistry                *service.MigrationRegistry
 	prometheusService                *provider.PrometheusMetricsServer
-	feedbackUserGromSession          *provider.GormSession
 	kafkaCreateOrderConsumerProvider *provider.KafkaConsumerProvider
 	kafkaProducerProvider            *provider.KafkaProducerProvider
 }
@@ -47,7 +44,6 @@ func (c *ContainerBuilder) Run(ctx context.Context) error {
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
-	c.initEventBus()
 	c.initThreadPool()
 	c.initMetrics()
 	c.GetThreadPool().Run(ctx)
@@ -64,16 +60,8 @@ func (c *ContainerBuilder) initThreadPool() {
 }
 
 func (c *ContainerBuilder) initMigrationRegistry() {
-	// todo : pass a GormSession!
-	// this will not work by TX
-	c.getMigrationRegistry().RegisterMigration("orders", c.NewOrderWriteRepository())
-}
-
-func (c *ContainerBuilder) getEventBus() *messaging.EventBus {
-	if c.eventBus == nil {
-		c.eventBus = messaging.NewEventBus()
-	}
-	return c.eventBus
+	session := c.NewMasterGormSession()
+	c.getMigrationRegistry().RegisterMigration("orders", c.NewOrderWriteRepositoryTx(session))
 }
 
 func (c *ContainerBuilder) getMigrationRegistry() *service.MigrationRegistry {
@@ -85,46 +73,31 @@ func (c *ContainerBuilder) getMigrationRegistry() *service.MigrationRegistry {
 }
 
 func (c *ContainerBuilder) NewMasterGormSession() *provider.GormSession {
-	return provider.NewGormSession(c.GetMasterDB().DB, c.getEventBus())
+	return provider.NewGormSession(c.GetMasterDB().DB)
 }
 
 func (c *ContainerBuilder) NewSlaveGormSession() *provider.GormSession {
-	return provider.NewGormSession(c.GetSlaveDB().DB, c.getEventBus())
+	return provider.NewGormSession(c.GetSlaveDB().DB)
 }
 
 func (c *ContainerBuilder) GetMasterDB() *provider.PGProvider {
-	if c.systemDb == nil {
+	if c.masterDb == nil {
 		pg, err := provider.NewPostgresConnection(c.cnf.MasterDatabase)
 		for err != nil {
 			logrus.Panic(err)
 		}
-		c.systemDb = pg
+		c.masterDb = pg
 	}
-	return c.systemDb
+	return c.masterDb
 }
 
 func (c *ContainerBuilder) GetSlaveDB() *provider.PGProvider {
-	if c.systemDb == nil {
+	if c.slaveDb == nil {
 		pg, err := provider.NewPostgresConnection(c.cnf.SlaveDatabase)
 		for err != nil {
 			logrus.Panic(err)
 		}
-		c.systemDb = pg
+		c.slaveDb = pg
 	}
-	return c.systemDb
-}
-
-func (c *ContainerBuilder) initEventBus() {
-	// bus := c.getEventBus()
-	// marshaller := messaging.NewJsonMarshaller(bus, c.getNatsQueue())
-	// c.getNatsQueue().SetPublisher(marshaller)
-	// bus.SetPublisher(marshaller)
-	// marshaller.RegisterEvent(func() messaging.IEvent { return &feedback.FeedbackChangedEvent{} })
-	// marshaller.RegisterEvent(func() messaging.IEvent { return &feedback.FillFeedbackChangesetEvent{} })
-	// marshaller.RegisterEvent(func() messaging.IEvent { return &exportation.FeedbackExportProcessCreatedEvent{} })
-	// marshaller.RegisterEvent(func() messaging.IEvent { return &exportation.FeedbackExportProcessChangesetCreatedEvent{} })
-	// marshaller.RegisterEvent(func() messaging.IEvent { return &exportation.FeedbackExportProcessChangedEvent{} })
-	// bus.RegisterAtLeastOnce(c.NewFeedbackEventHandler())
-	// bus.RegisterAtLeastOnce(c.NewFeedbackExportEventHandler())
-	// bus.RegisterAtLeastOnce(c.NewFeedbackViewEventHandler())
+	return c.slaveDb
 }
