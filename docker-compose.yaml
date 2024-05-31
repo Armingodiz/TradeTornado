@@ -88,6 +88,48 @@ services:
       - kafka-data:/bitnami/kafka
 
 
+  go-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_primary
+      - postgres_replica
+      - kafka
+    environment:
+      APP_NAME: tradeTornado
+      POSTGRES_MASTER_HOST: postgres_primary
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_MASTER_USER: admin
+      POSTGRES_MASTER_PASS: adminpassword
+      POSTGRES_MASTER_DB: tradeTornado
+      POSTGRES_MASTER_MAX_CONNECTION: 30
+      POSTGRES_MASTER_MAX_IDLE: 10
+      POSTGRES_SLAVE_HOST: postgres_replica
+      POSTGRES_SLAVE_PORT: 5433 
+      POSTGRES_SLAVE_USER: admin
+      POSTGRES_SLAVE_PASS: adminpassword
+      POSTGRES_SLAVE_DB: tradeTornado
+      POSTGRES_SLAVE_MAX_CONNECTION: 30
+      POSTGRES_SLAVE_MAX_IDLE: 4
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CONSUMER_BATCH_SIZE: 100
+      KAFKA_GROUP_ID: tradeTornadoGroup
+      KAFKA_USERNAME: ""
+      KAFKA_PASSWORD: ""
+      METRIC_PORT: 9092
+      MONITOR_DISABLE: "true"
+      IS_PRODUCTION: "false"
+      API_PORT: 8080
+      API_NAME: order-server
+      API_READ_TIMEOUT: 50000
+      API_WRITE_TIMEOUT: 10000
+      KAFKA_ORDER_CREATE_TOPIC: order-events
+      KAFKA_ORDER_MATCH_TOPIC: order-matches
+      KAFKA_ORDER_CREATE_CONSUMER_GROUP: matcher
+
   go-producer:
     build:
       context: ./producer
@@ -109,47 +151,3 @@ volumes:
   postgres_primary_data:
   postgres_replica_data:
   kafka-data:
-
-
-
-  go-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres_primary
-      - postgres_replica
-      - kafka
-    environment:
-      APP_NAME: tradeTornado
-      POSTGRES_MASTER_HOST: postgres_primary
-      POSTGRES_MASTER_PORT: 5432
-      POSTGRES_MASTER_USER: admin
-      POSTGRES_MASTER_PASS: adminpassword
-      POSTGRES_MASTER_DB: tradeTornado
-      POSTGRES_MASTER_MAX_CONNECTION: 20
-      POSTGRES_MASTER_MAX_IDLE: 4
-      POSTGRES_SLAVE_HOST: postgres_replica
-      POSTGRES_SLAVE_PORT: 5433 
-      POSTGRES_SLAVE_USER: admin
-      POSTGRES_SLAVE_PASS: adminpassword
-      POSTGRES_SLAVE_DB: tradeTornado
-      POSTGRES_SLAVE_MAX_CONNECTION: 20
-      POSTGRES_SLAVE_MAX_IDLE: 4
-      KAFKA_BROKERS: kafka:9092
-      KAFKA_CONSUMER_BATCH_SIZE: 100
-      KAFKA_GROUP_ID: tradeTornadoGroup
-      KAFKA_USERNAME: ""
-      KAFKA_PASSWORD: ""
-      METRIC_PORT: 9092
-      MONITOR_DISABLE: "true"
-      IS_PRODUCTION: "false"
-      API_PORT: 8080
-      API_NAME: order-server
-      API_READ_TIMEOUT: 50000
-      API_WRITE_TIMEOUT: 10000
-      KAFKA_ORDER_CREATE_TOPIC: order-events
-      KAFKA_ORDER_MATCH_TOPIC: order-matches
-      KAFKA_ORDER_CREATE_CONSUMER_GROUP: matcher

@@ -264,7 +264,7 @@ func applyPagination(qr *gorm.DB, criteria *Criteria) (*gorm.DB, error) {
 
 func isFieldIndexed(gormTag string) bool {
 	tags := strings.Split(gormTag, ";")
-	for _, tag := range tags { // TODO: check other kind of index tags
+	for _, tag := range tags {
 		parts := strings.Split(tag, ":")
 		if parts[0] == "index" || parts[0] == "uniqueIndex" || parts[0] == "primarykey" {
 			return true

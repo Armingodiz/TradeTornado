@@ -8,7 +8,7 @@ import (
 	"tradeTornado/internal/service/provider"
 )
 
-// TODO: if we need to persist we can use redis set forexample
+// TODO: if we need to persist we can use redis set forexample, I wasn't sure what we need from orderBook
 type orderHeapData struct {
 	*order.Order
 }

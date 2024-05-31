@@ -1,13 +1,18 @@
 # Build stage
 FROM --platform=linux/amd64 golang:1.21.0-alpine AS build
 
+# First add modules list to better utilize caching
+COPY go.sum go.mod /src/
+
 WORKDIR /src
 
 COPY . /src
 
-# RUN go mod download source code is updated
 
-RUN go build -ldflags="-w -s" -o my-app main.go
+RUN go mod download
+RUN go mod tidy
+
+RUN GO111MODULE=on go build -ldflags="-w -s" --tags musl -o my-app main.go
 
 # Run stage
 FROM --platform=linux/amd64 ubuntu:20.04

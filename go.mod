@@ -1,11 +1,10 @@
 module tradeTornado
 
-go 1.21.0
+go 1.21.5
 
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/gin-gonic/gin v1.10.0
-	github.com/gomodule/redigo v1.9.2
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.6.0

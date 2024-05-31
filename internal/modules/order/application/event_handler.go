@@ -80,7 +80,7 @@ func (o *OrderEventHandler) Run(ctx context.Context) error {
 }
 
 func (o *OrderEventHandler) matchOrder(ctx context.Context, orderRepo order.IOrderWriteRepository, createdOrder *order.Order) error {
-	// TODO: database may become bottleneck, check for better approach
+	// TODO: database may become bottleneck, use cache or eventual solutions (Inbox pattern forexample) based on load
 	return orderRepo.SelectForUpdate(ctx, createdOrder.Side.GetMatchSide(), int(createdOrder.Price), int(createdOrder.Quantity), func(ctx context.Context, matchedOrder *order.Order) error {
 		createdOrder.Match()
 		err := orderRepo.Save(ctx, createdOrder)
