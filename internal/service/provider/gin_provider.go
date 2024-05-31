@@ -63,7 +63,6 @@ func (s *GinServer) Run(ctx context.Context) error {
 
 func (s *GinServer) AddRouter(router lib.IController) {
 	gr2 := s.Router.Group(router.GetRoot())
-	gr2.Use(genericErrorHandler)
 	for _, handlerFunc := range router.GetMiddlewares() {
 		gr2.Use(handlerFunc)
 	}
@@ -74,19 +73,4 @@ func (s *GinServer) AddRouter(router lib.IController) {
 
 func (s *GinServer) AddMiddleWare(middleware gin.HandlerFunc) {
 	s.Router.Use(middleware)
-}
-
-func genericErrorHandler(context *gin.Context) {
-	context.Next()
-	if !context.IsAborted() {
-		if lastErr := context.Errors.Last(); lastErr != nil {
-			errNotification, ok := lastErr.Err.(*lib.ErrorNotification)
-			if ok {
-				context.AbortWithStatusJSON(http.StatusBadRequest, errNotification.Errs)
-				return
-			}
-			context.AbortWithStatusJSON(http.StatusInternalServerError, lastErr)
-			return
-		}
-	}
 }

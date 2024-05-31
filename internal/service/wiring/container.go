@@ -13,6 +13,7 @@ import (
 
 type ContainerBuilder struct {
 	cnf                              configs.Configs
+	apiServer                        *provider.GinServer
 	masterDb                         *provider.PGProvider
 	slaveDb                          *provider.PGProvider
 	threadPool                       *service.ExecutorRegistry
@@ -46,6 +47,7 @@ func (c *ContainerBuilder) Run(ctx context.Context) error {
 	}
 	c.initThreadPool()
 	c.initMetrics()
+	c.initApiServer()
 	c.GetThreadPool().Run(ctx)
 	return nil
 }
@@ -54,6 +56,7 @@ func (c *ContainerBuilder) initThreadPool() {
 	pool := c.GetThreadPool()
 	pool.AddExecutor(c.GetMasterDB())
 	pool.AddExecutor(c.GetSlaveDB())
+	pool.AddExecutor(c.GetApiServer())
 	pool.AddExecutor(c.GetKafkaCreateOrderConsumerProvider())
 	pool.AddExecutor(c.NewOrderEventHandler())
 	pool.AddExecutor(c.GetMetricsService())
@@ -100,4 +103,19 @@ func (c *ContainerBuilder) GetSlaveDB() *provider.PGProvider {
 		c.slaveDb = pg
 	}
 	return c.slaveDb
+}
+
+func (c *ContainerBuilder) NewGinServer(cnf provider.ServerConfigs) *provider.GinServer {
+	return provider.NewGinServer(cnf)
+}
+
+func (c *ContainerBuilder) GetApiServer() *provider.GinServer {
+	if c.apiServer == nil {
+		c.apiServer = c.NewGinServer(c.cnf.ServerConfigs)
+	}
+	return c.apiServer
+}
+
+func (c *ContainerBuilder) initApiServer() {
+	c.GetApiServer().AddRouter(c.NewOrdereController())
 }

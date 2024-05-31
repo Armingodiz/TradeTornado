@@ -8,7 +8,7 @@ import (
 	"tradeTornado/internal/service/provider"
 )
 
-func (c *ContainerBuilder) GetOrdereController() *infrastructure.OrderController {
+func (c *ContainerBuilder) NewOrdereController() *infrastructure.OrderController {
 	return infrastructure.NewOrderController(c.NewOrdereQueryHandler())
 }
 
