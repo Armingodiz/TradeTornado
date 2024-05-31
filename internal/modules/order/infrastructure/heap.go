@@ -19,7 +19,7 @@ func (ohd *orderHeapData) GetRank() int {
 
 type OrderBook struct {
 	order.IOrderGenericRepository
-	// TODO: add mutex lock for concurrency concerns
+	// TODO:add mutex lock for concurrency concerns
 	minHeap lib.IMinHeap
 	maxHeap lib.IMaxHeap
 	session *provider.GormSession
