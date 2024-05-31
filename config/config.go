@@ -19,6 +19,7 @@ type Configs struct {
 	OrderCreateTopic         string
 	OrderMatchedTopic        string
 	OrderCreateConsumerGroup string
+	ServerConfigs            provider.ServerConfigs
 }
 
 func ConfigFromEnv() Configs {
@@ -66,5 +67,11 @@ func ConfigFromEnv() Configs {
 		OrderCreateTopic:         "order-events",
 		OrderMatchedTopic:        "order-matches",
 		OrderCreateConsumerGroup: "matcher",
+		ServerConfigs: provider.ServerConfigs{
+			Port:           lib.GetEnv("API_PORT", "8080"),
+			Name:           lib.GetEnv("API_NAME", "order-matcher"),
+			ReadTimeoutMS:  lib.GetEnv("API_READ_TIMEOUT", "50000"),
+			WriteTimeoutMS: lib.GetEnv("API_WRITE_TIMEOUT", "10000"),
+		},
 	}
 }

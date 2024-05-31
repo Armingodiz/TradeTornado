@@ -152,7 +152,6 @@ func (receiver *KafkaConsumerProvider) commitOffsets(batch []*kafka.Message) {
 	// Kafka prefers batch commit
 	offsets := make([]kafka.TopicPartition, len(batch))
 	for i, msg := range batch {
-		fmt.Println("#### --> here commits", msg.TopicPartition.Offset+1, string(msg.Value))
 		offsets[i] = kafka.TopicPartition{
 			Topic:     msg.TopicPartition.Topic,
 			Partition: msg.TopicPartition.Partition,

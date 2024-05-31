@@ -107,7 +107,7 @@ func main() {
 			}
 		}
 	}
-	producer.Flush(150000)
+	producer.Flush(10000)
 }
 
 type Config struct {
