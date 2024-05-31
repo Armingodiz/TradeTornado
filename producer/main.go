@@ -81,7 +81,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	orderIDGen := &OrderIDGenerator{counter: 0}
+	orderIDGen := &OrderIDGenerator{counter: cfg.BaseId}
 	orders := make(chan Order, cfg.NumOrders)
 
 	for i := 0; i < cfg.NumWorkers; i++ {
@@ -119,6 +119,7 @@ type Config struct {
 	MaxPrice    int
 	MinQuantity int
 	MaxQuantity int
+	BaseId      int
 }
 
 func getEnv(key string, fallback string) string {
@@ -132,12 +133,13 @@ func configFromEnv() Config {
 	return Config{
 		Broker:      getEnv("BROKER", "localhost:29092"),
 		Topic:       getEnv("TOPIC", "order-events"),
-		NumWorkers:  cast.ToInt(getEnv("NUM_WORKERS", "5")),
-		NumOrders:   cast.ToInt(getEnv("NUM_ORDERS", "10")),
+		NumWorkers:  cast.ToInt(getEnv("NUM_WORKERS", "100")),
+		NumOrders:   cast.ToInt(getEnv("NUM_ORDERS", "10000")),
 		MinPrice:    cast.ToInt(getEnv("MIN_PRICE", "1")),
 		MaxPrice:    cast.ToInt(getEnv("MAX_PRICE", "10")),
 		MinQuantity: cast.ToInt(getEnv("MIN_QUANTITY", "1")),
 		MaxQuantity: cast.ToInt(getEnv("MAX_QUANTITY", "20")),
+		BaseId:      cast.ToInt(getEnv("BASE_ID", "30000")),
 	}
 }
 
