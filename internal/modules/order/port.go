@@ -15,6 +15,12 @@ type IOrderReadRepository interface {
 	List(ctx context.Context, cr lib.Criteria) ([]*Order, int, error)
 }
 
+type IOrderBook interface {
+	IOrderGenericRepository
+	GetMax(ctx context.Context) (*Order, error)
+	GetMin(ctx context.Context) (*Order, error)
+}
+
 type IOrderGenericRepository interface {
 	IOrderReadRepository
 	IOrderWriteRepository

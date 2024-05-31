@@ -23,8 +23,8 @@ type OrderEventHandler struct {
 
 type orderCreateEvent struct {
 	OrderID  uint   `json:"orderID"`
-	Price    int64  `json:"price"`
-	Quantity int32  `json:"quantity"`
+	Price    int    `json:"price"`
+	Quantity int    `json:"quantity"`
 	Side     string `json:"side"`
 }
 

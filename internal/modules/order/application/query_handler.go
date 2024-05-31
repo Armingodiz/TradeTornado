@@ -9,8 +9,8 @@ import (
 type OrderDto struct {
 	Matched   bool
 	Side      string
-	Price     int64
-	Quantity  int32
+	Price     int
+	Quantity  int
 	CreatedAt int64
 }
 

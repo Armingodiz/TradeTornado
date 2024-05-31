@@ -10,8 +10,8 @@ type Order struct {
 	CreatedAt time.Time
 	Matched   bool      `criteria:"matched" gorm:"column:matched;index:idx_matched_side_price_quantity,priority:1"`
 	Side      OrderSide `criteria:"side" gorm:"column:side;index:idx_matched_side_price_quantity,priority:2"`
-	Price     int64     `criteria:"price" gorm:"column:price;index:idx_matched_side_price_quantity,priority:3"`
-	Quantity  int32     `criteria:"quantity" gorm:"column:quantity;index:idx_matched_side_price_quantity,priority:4"`
+	Price     int       `criteria:"price" gorm:"column:price;index:idx_matched_side_price_quantity,priority:3"`
+	Quantity  int       `criteria:"quantity" gorm:"column:quantity;index:idx_matched_side_price_quantity,priority:4"`
 }
 
 type OrderSide string
@@ -29,7 +29,7 @@ func (os OrderSide) GetMatchSide() OrderSide {
 	}
 }
 
-func NewOrder(id uint, side string, price int64, quantity int32) (*Order, error) {
+func NewOrder(id uint, side string, price int, quantity int) (*Order, error) {
 	order := &Order{
 		Price:     price,
 		Quantity:  quantity,
