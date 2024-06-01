@@ -89,9 +89,10 @@ services:
 
 
   go-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: awrmin/trade-tornado:latest
     ports:
       - "8080:8080"
     depends_on:
@@ -108,7 +109,7 @@ services:
       POSTGRES_MASTER_MAX_CONNECTION: 30
       POSTGRES_MASTER_MAX_IDLE: 10
       POSTGRES_SLAVE_HOST: postgres_replica
-      POSTGRES_SLAVE_PORT: 5433 
+      POSTGRES_SLAVE_PORT: 5432
       POSTGRES_SLAVE_USER: admin
       POSTGRES_SLAVE_PASS: adminpassword
       POSTGRES_SLAVE_DB: tradeTornado
@@ -119,7 +120,7 @@ services:
       KAFKA_GROUP_ID: tradeTornadoGroup
       KAFKA_USERNAME: ""
       KAFKA_PASSWORD: ""
-      METRIC_PORT: 9092
+      METRIC_PORT: 9090
       MONITOR_DISABLE: "true"
       IS_PRODUCTION: "false"
       API_PORT: 8080
@@ -131,9 +132,10 @@ services:
       KAFKA_ORDER_CREATE_CONSUMER_GROUP: matcher
 
   go-producer:
-    build:
-      context: ./producer
-      dockerfile: Dockerfile
+    image: awrmin/trade-tornado-producer:latest
+    # build:
+    #   context: ./producer
+    #   dockerfile: Dockerfile
     depends_on:
       - kafka
     environment:
